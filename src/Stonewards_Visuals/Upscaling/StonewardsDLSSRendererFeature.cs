@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using UpscalerLib.Native;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.NVIDIA;

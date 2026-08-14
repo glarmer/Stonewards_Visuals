@@ -8,6 +8,7 @@ using UnityEngine.SceneManagement;
 namespace Stonewards_Visuals;
 
 [BepInAutoPlugin]
+[BepInDependency(global::UpscalerLib.Plugin.Guid, BepInDependency.DependencyFlags.HardDependency)]
 public partial class Plugin : BaseUnityPlugin
 {
     internal static ManualLogSource Log { get; private set; } = null!;

@@ -7,6 +7,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{30D41FE9-BDA
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Stonewards_Visuals", "src\Stonewards_Visuals\Stonewards_Visuals.csproj", "{F82F1AEA-5C5A-426A-B99E-9AAF0A7F46D1}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UpscalerLib", "src\UpscalerLib\UpscalerLib.csproj", "{C9B5578C-273D-404E-82B9-E4315F27302B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,12 +19,17 @@ Global
 		{F82F1AEA-5C5A-426A-B99E-9AAF0A7F46D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F82F1AEA-5C5A-426A-B99E-9AAF0A7F46D1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F82F1AEA-5C5A-426A-B99E-9AAF0A7F46D1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C9B5578C-273D-404E-82B9-E4315F27302B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C9B5578C-273D-404E-82B9-E4315F27302B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C9B5578C-273D-404E-82B9-E4315F27302B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C9B5578C-273D-404E-82B9-E4315F27302B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{F82F1AEA-5C5A-426A-B99E-9AAF0A7F46D1} = {30D41FE9-BDAB-4E82-A7A9-F1F6DD5025A8}
+		{C9B5578C-273D-404E-82B9-E4315F27302B} = {30D41FE9-BDAB-4E82-A7A9-F1F6DD5025A8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {92F6D475-68F0-44D6-A1AF-A28F5948E381}
