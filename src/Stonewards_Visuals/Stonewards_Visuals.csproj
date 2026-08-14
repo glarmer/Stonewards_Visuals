@@ -8,8 +8,4 @@
         <BepInExPluginSubDir>Stonewards_Visuals</BepInExPluginSubDir>
     </PropertyGroup>
 
-    <ItemGroup>
-        <ProjectReference Include="..\UpscalerLib\UpscalerLib.csproj" Private="false" />
-    </ItemGroup>
-
 </Project>

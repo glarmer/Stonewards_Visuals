@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using UpscalerLib.Native;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.NVIDIA;
@@ -225,7 +224,7 @@ internal sealed class StonewardsDLSSRendererFeature : ScriptableRendererFeature
 
             try
             {
-                if (!NvidiaNativeLoader.EnsureLoaded())
+                if (!OptionalUpscalerLib.EnsureNvidiaLoaded())
                 {
                     Plugin.Log.LogWarning("DLSS unavailable because the nvidia Unity plugin did not load.");
                     return false;
@@ -271,7 +270,7 @@ internal sealed class StonewardsDLSSRendererFeature : ScriptableRendererFeature
 
         private static NvidiaGraphicsDevice? CreateGraphicsDevice(string projectID)
         {
-            string nativeDirectory = NvidiaNativeLoader.NativeDirectory;
+            string nativeDirectory = OptionalUpscalerLib.NativeDirectory;
             string nativeDirectoryWithSeparator = nativeDirectory.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal)
                 || nativeDirectory.EndsWith(Path.AltDirectorySeparatorChar.ToString(), StringComparison.Ordinal)
                     ? nativeDirectory
@@ -309,7 +308,7 @@ internal sealed class StonewardsDLSSRendererFeature : ScriptableRendererFeature
                 $"DeviceVersion='{SystemInfo.graphicsDeviceVersion}', " +
                 $"NVPluginLoaded={NVUnityPlugin.IsLoaded()}, " +
                 $"NVPluginVersion={NvidiaGraphicsDevice.version}, " +
-                $"NativeDir='{NvidiaNativeLoader.NativeDirectory}'");
+                $"NativeDir='{OptionalUpscalerLib.NativeDirectory}'");
         }
 
         private bool ShouldReinitializeContext(
