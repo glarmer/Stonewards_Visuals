@@ -11,6 +11,7 @@ public sealed class ConfigurationHandler
     private ConfigFile _config;
     public InputAction? MenuAction { get; set; }
 
+    public ConfigEntry<bool> ConfigEnableRenderScale;
     public ConfigEntry<float> ConfigRenderScale;
     public ConfigEntry<int> ConfigUpscalingFilter;
     public ConfigEntry<int> ConfigDLSSMode;
@@ -27,6 +28,7 @@ public sealed class ConfigurationHandler
     public ConfigEntry<int> ConfigCameraAA;
     public ConfigEntry<int> ConfigMSAA;
 
+    public bool EnableRenderScale => ConfigEnableRenderScale.Value;
     public float RenderScale => ConfigRenderScale.Value;
     public int UpscalingFilter => ConfigUpscalingFilter.Value;
     internal DLSSMode DLSSMode => (DLSSMode)ConfigDLSSMode.Value;
@@ -48,6 +50,14 @@ public sealed class ConfigurationHandler
         _config = configFile;
 
         Plugin.Log.LogInfo("ConfigurationHandler initialising");
+
+        ConfigEnableRenderScale = Bind(
+            "Scaling",
+            "EnableRenderScale",
+            false,
+            "Allows Stonewards Visuals to override the game's internal render scale. When off, the game controls pixelisation and render resolution.",
+            () => Plugin.Instance.Settings.SetResolutionScale()
+        );
 
         ConfigRenderScale = Bind(
             "Scaling",

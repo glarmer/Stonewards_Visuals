@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using BepInEx;
 using BepInEx.Logging;
+using HarmonyLib;
 using Stonewards_Visuals.Configuration;
 using Stonewards_Visuals.Upscaling;
 using UnityEngine;
@@ -21,6 +22,7 @@ public partial class Plugin : BaseUnityPlugin
     private ModConfigurationUI _ui = null!;
     private Camera? _lastCamera;
     private float _nextCameraCheck;
+    private Harmony? _harmony;
 
     private void Awake()
     {
@@ -38,6 +40,9 @@ public partial class Plugin : BaseUnityPlugin
         Settings = new Settings();
         if (!UpscalerLibAvailable)
             ConfigurationHandler.ForceDLSSOff();
+
+        _harmony = new Harmony(Id);
+        _harmony.PatchAll();
         
         var go = new GameObject("StonewardsVisuals");
         DontDestroyOnLoad(go);
@@ -47,13 +52,17 @@ public partial class Plugin : BaseUnityPlugin
 
         List<Option> options =
         [
+            Option.Bool(
+                "Enable Render Scale",
+                ConfigurationHandler.ConfigEnableRenderScale
+            ),
             Option.Float(
                 "Render Scale",
                 ConfigurationHandler.ConfigRenderScale,
                 0.1f,
                 2f,
                 0.1f,
-                () => ConfigurationHandler.DLSSEnabled,
+                () => !ConfigurationHandler.EnableRenderScale || ConfigurationHandler.DLSSEnabled,
                 () => ConfigurationHandler.DLSSEnabled
                     ? $"{Stonewards_Visuals.Settings.GetDLSSRenderScale(ConfigurationHandler.DLSSMode):F2} ({ConfigurationHandler.DLSSMode})"
                     : ConfigurationHandler.ConfigRenderScale.Value.ToString("F3")
@@ -201,6 +210,8 @@ public partial class Plugin : BaseUnityPlugin
 
     private void OnDestroy()
     {
+        _harmony?.UnpatchSelf();
+        _harmony = null;
         SceneManager.sceneLoaded -= OnSceneLoaded;
         ConfigurationHandler?.Dispose();
         if (Instance == this)

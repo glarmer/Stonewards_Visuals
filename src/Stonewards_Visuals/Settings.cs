@@ -1,5 +1,6 @@
 using System.Reflection;
 using Stonewards_Visuals.Configuration;
+using Stonewards_Visuals.Patches;
 using Stonewards_Visuals.Upscaling;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -103,6 +104,13 @@ public class Settings
 
     public void SetResolutionScale()
     {
+        if (!_configurationHandler.EnableRenderScale)
+        {
+            ResolutionManagerStartPatch.RestoreGameTargetHeight();
+            Plugin.Log.LogInfo("Render Scale skipped: Enable Render Scale is off.");
+            return;
+        }
+
         if (!(GraphicsSettings.currentRenderPipeline is UniversalRenderPipelineAsset currentRenderPipeline))
             return;
         float renderScale = _configurationHandler.DLSSEnabled
@@ -112,6 +120,7 @@ public class Settings
         Plugin.Log.LogInfo(_configurationHandler.DLSSEnabled
             ? $"Render Scale applied: {renderScale} (DLSS {_configurationHandler.DLSSMode})"
             : "Render Scale applied: " + renderScale);
+        ResolutionManagerStartPatch.ApplyTargetHeightFromRenderScale();
     }
 
     public void SetUpscaler()
