@@ -16,10 +16,11 @@ public class Settings
     {
         return mode switch
         {
+            DLSSMode.UltraQuality => 0.77f,
             DLSSMode.Quality => 0.67f,
             DLSSMode.Balanced => 0.58f,
             DLSSMode.Performance => 0.5f,
-            DLSSMode.UltraPerformance => 1f / 3f,
+            DLSSMode.UltraPerformance => 0.33f,
             DLSSMode.DLAA => 1f,
             _ => 1f
         };

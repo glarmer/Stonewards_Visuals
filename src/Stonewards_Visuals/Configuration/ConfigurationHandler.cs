@@ -81,9 +81,9 @@ public sealed class ConfigurationHandler
             "Scaling",
             "DLSSMode",
             0,
-            "Controls NVIDIA DLSS, requires an Nvidia RTX GPU! 0 = Off, 1 = Quality, 2 = Balanced, 3 = Performance, 4 = Ultra Performance, 5 = DLAA.",
+            "Controls NVIDIA DLSS, requires an Nvidia RTX GPU! 0 = Off, 1 = Ultra Quality, 2 = Quality, 3 = Balanced, 4 = Performance, 5 = Ultra Performance, 6 = DLAA.",
             () => Plugin.Instance.Settings.SetDLSS(),
-            v => Mathf.Clamp(v, 0, 5)
+            v => Mathf.Clamp(v, 0, 6)
         );
 
         ConfigDLSSPreset = Bind(
