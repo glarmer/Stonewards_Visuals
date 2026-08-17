@@ -4,6 +4,7 @@ using BepInEx.Logging;
 using HarmonyLib;
 using Stonewards_Visuals.Configuration;
 using Stonewards_Visuals.Upscaling;
+using Stonewards_Visuals.Pixelation;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -13,16 +14,23 @@ namespace Stonewards_Visuals;
 [BepInDependency(OptionalUpscalerLib.PluginGuid, BepInDependency.DependencyFlags.SoftDependency)]
 public partial class Plugin : BaseUnityPlugin
 {
-    internal static ManualLogSource Log { get; private set; } = null!;
+    public static ManualLogSource Log { get; private set; } = null!;
     public static Plugin Instance {get; private set;} = null!;
+    private Harmony _harmony;
+    
     public ConfigurationHandler ConfigurationHandler {get; private set;} = null!;
-    public Settings Settings { get; private set; } = null!;
-    internal DLSSController? DLSSController { get; private set; }
-    internal bool UpscalerLibAvailable { get; private set; }
     private ModConfigurationUI _ui = null!;
-    private Camera? _lastCamera;
+    
+    private Camera _lastCamera;
     private float _nextCameraCheck;
-    private Harmony? _harmony;
+    
+    public Settings Settings { get; private set; } = null!;
+    public DLSSController DLSSController { get; private set; }
+    public bool UpscalerLibAvailable { get; private set; }
+    
+    public StonewardsShaderBundle Shaders { get; private set; } = null!;
+    public PixelationController PixelationController { get; private set; }
+    public PixelationVolume PixelationVolume { get; private set; }
 
     private void Awake()
     {
@@ -38,6 +46,8 @@ public partial class Plugin : BaseUnityPlugin
 
         ConfigurationHandler = new ConfigurationHandler(Config);
         Settings = new Settings();
+        Shaders = new StonewardsShaderBundle();
+        Shaders.Load();
         if (!UpscalerLibAvailable)
             ConfigurationHandler.ForceDLSSOff();
 
@@ -49,6 +59,8 @@ public partial class Plugin : BaseUnityPlugin
         if (UpscalerLibAvailable)
             DLSSController = go.AddComponent<DLSSController>();
         _ui = go.AddComponent<ModConfigurationUI>();
+        PixelationVolume = go.AddComponent<PixelationVolume>();
+        PixelationController = go.AddComponent<PixelationController>();
 
         List<Option> options =
         [
@@ -64,7 +76,7 @@ public partial class Plugin : BaseUnityPlugin
                 0.1f,
                 () => !ConfigurationHandler.EnableRenderScale || ConfigurationHandler.DLSSEnabled,
                 () => ConfigurationHandler.DLSSEnabled
-                    ? $"{Stonewards_Visuals.Settings.GetDLSSRenderScale(ConfigurationHandler.DLSSMode):F2} ({ConfigurationHandler.DLSSMode})"
+                    ? $"{Settings.GetDLSSRenderScale(ConfigurationHandler.DLSSMode):F2} ({ConfigurationHandler.DLSSMode})"
                     : ConfigurationHandler.ConfigRenderScale.Value.ToString("F3")
             ),
             Option.Int(
@@ -169,6 +181,55 @@ public partial class Plugin : BaseUnityPlugin
                     _ => ConfigurationHandler.ConfigMSAA.Value + "x"
                 }
             ),
+            Option.Bool(
+                "Pixelation",
+                ConfigurationHandler.ConfigPixelationEnabled
+            ),
+            Option.Float(
+                "Pixelation Intensity",
+                ConfigurationHandler.ConfigPixelationIntensity,
+                0f,
+                1f,
+                0.05f,
+                () => !ConfigurationHandler.PixelationEnabled,
+                () => $"{ConfigurationHandler.PixelationIntensity * 100f:F0}%"
+            ),
+            Option.Bool(
+                "Color Precision",
+                ConfigurationHandler.ConfigPixelationColorPrecision,
+                () => !ConfigurationHandler.PixelationEnabled
+            ),
+            Option.Float(
+                "Color Steps",
+                ConfigurationHandler.ConfigPixelationColorSteps,
+                4f,
+                256f,
+                4f,
+                () => !ConfigurationHandler.PixelationEnabled || !ConfigurationHandler.PixelationColorPrecisionEnabled,
+                () => $"{ConfigurationHandler.PixelationColorSteps:F0}"
+            ),
+            Option.Bool(
+                "Dithering",
+                ConfigurationHandler.ConfigPixelationDithering,
+                () => !ConfigurationHandler.PixelationEnabled
+            ),
+            Option.Int(
+                "Dither Pattern",
+                ConfigurationHandler.ConfigPixelationDitherPattern,
+                0,
+                10,
+                1,
+                () => !ConfigurationHandler.PixelationEnabled || !ConfigurationHandler.PixelationDitheringEnabled
+            ),
+            Option.Float(
+                "Dither Strength",
+                ConfigurationHandler.ConfigPixelationDitherStrength,
+                0f,
+                1f,
+                0.05f,
+                () => !ConfigurationHandler.PixelationEnabled || !ConfigurationHandler.PixelationDitheringEnabled,
+                () => $"{ConfigurationHandler.PixelationDitherStrength * 100f:F0}%"
+            ),
             Option.InputAction("Menu Key", ConfigurationHandler.ConfigMenuKey)
         ]);
 
@@ -204,16 +265,17 @@ public partial class Plugin : BaseUnityPlugin
             return;
 
         _lastCamera = camera;
-        DLSSController?.Refresh(camera);
+        DLSSController.Refresh(camera);
+        PixelationController.Refresh(camera);
         Settings.SetAllCameraSettings(camera);
         Log.LogInfo($"Using camera '{camera.name}' for Stonewards visual settings.");
     }
 
     private void OnDestroy()
     {
-        _harmony?.UnpatchSelf();
-        _harmony = null;
+        _harmony.UnpatchSelf();
         SceneManager.sceneLoaded -= OnSceneLoaded;
+        Shaders.Dispose();
         ConfigurationHandler?.Dispose();
         if (Instance == this)
             Instance = null!;

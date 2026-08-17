@@ -6,7 +6,7 @@ using UnityEngine.Rendering.Universal;
 
 namespace Stonewards_Visuals.Upscaling;
 
-internal sealed class DLSSController : MonoBehaviour
+public sealed class DLSSController : MonoBehaviour
 {
     private StonewardsDLSSRendererFeature? _feature;
     private ScriptableRenderer? _renderer;
