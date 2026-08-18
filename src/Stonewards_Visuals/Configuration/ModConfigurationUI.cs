@@ -1,29 +1,28 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.Rendering;
 
 namespace Stonewards_Visuals.Configuration;
 
 public class ModConfigurationUI : MonoBehaviour
 {
-    private List<Option> _options = new();
-    private bool _visible;
+    private List<Option> _options;
+    public bool _visible;
     private int _selectedIndex;
-
-    private bool _prevCursorVisible;
-    private CursorLockMode _prevCursorLock;
+    private CursorLockMode _previousCursorLockMode;
+    private bool _previousCursorVisible;
 
     private bool _waitingForBinding = false;
-    private Option? _bindingTarget;
+    private Option _bindingTarget;
 
-    private Texture2D _whiteTex = null!;
-    private GUIStyle _titleStyle = null!;
-    private GUIStyle _rowStyle = null!;
-    private GUIStyle _hintStyle = null!;
+    private Texture2D _whiteTex;
+    private GUIStyle _titleStyle;
+    private GUIStyle _rowStyle;
+    private GUIStyle _hintStyle;
+    private GUIStyle _buttonStyle;
 
-    private string titleText = $"Stonewards Visuals Settings | v {Plugin.Version}";
-    private string hintText = "F11: Open/Close • Tab or ↑/↓: Move • Enter/Click: Change • Scroll Wheel or ←/→ Arrows: Adjust Numerical Values • +/-: Scale Menu";
+    private string titleText = "Stonewards Visuals | v" + Plugin.Version;
+    private string hintText = "Tab or ↑/↓:  Move • Enter/Click: Change • Scroll Wheel or ←/→ Arrows: Adjust Numerical Values • +/-: Scale Menu";
 
     private int RowHeight = 32;
     private int PanelWidth = 460;
@@ -33,11 +32,62 @@ public class ModConfigurationUI : MonoBehaviour
     private int OptionFontSize = 16;
     private int HintFontSize = 14;
 
-    private Color GetColor(Color c)
+    private const int ButtonWidth = 30;
+    private const int ButtonHeight = 30;
+    private const int ButtonHintSpacing = 4;
+
+    public static ModConfigurationUI Instance;
+
+    private void Awake()
     {
-        if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Vulkan)
-            return c.linear;
-        return c;
+        if (Instance != null)
+        {
+            Destroy(Instance);
+        }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+        StartClosed();
+    }
+
+    public void ToggleMenu()
+    {
+        if (_visible)
+        {
+            Close();
+        }
+        else
+        {
+            Open();
+        }
+    }
+
+    private void StartClosed()
+    {
+        _visible = false;
+        _waitingForBinding = false;
+        _bindingTarget = null;
+    }
+
+    private void Open()
+    {
+        _previousCursorLockMode = Cursor.lockState;
+        _previousCursorVisible = Cursor.visible;
+        _visible = true;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        if (_options != null && _options.Count > 0 && _options[_selectedIndex].IsDisabled())
+            CycleSelection(1);
+    }
+
+    private void Close()
+    {
+        _visible = false;
+        _waitingForBinding = false;
+        _bindingTarget = null;
+        Cursor.lockState = _previousCursorLockMode;
+        Cursor.visible = _previousCursorVisible;
     }
 
     private void CalculatePanelWidth()
@@ -70,13 +120,16 @@ public class ModConfigurationUI : MonoBehaviour
 
             testWidth += 20;
         }
+
         return Screen.width - Pad * 2;
     }
 
     private void Scale(int scale)
     {
-        if (scale < 0 && HintFontSize <= 8)
+        if (scale < 0 && HintFontSize < 2)
+        {
             return;
+        }
 
         TitleFontSize += scale * 2;
         OptionFontSize += scale * 2;
@@ -92,16 +145,15 @@ public class ModConfigurationUI : MonoBehaviour
         _options = options ?? new List<Option>();
         _selectedIndex = 0;
 
-        hintText =
-            $"{Plugin.Instance.ConfigurationHandler.ConfigMenuKey.Value.Split("/")[^1].ToUpper()}: Open/Close • Tab or ↑/↓: Move • Enter/Click: Change • Scroll Wheel or ←/→ Arrows: Adjust Numerical Values • +/-: Scale Menu";
+        hintText = $"{Plugin.Instance.ConfigurationHandler.ConfigMenuKey.Value.Split("/")[^1].ToUpper()}: Open/Close • Tab or ↑/↓:  Move • Enter/Click: Change • Scroll Wheel or ←/→ Arrows: Adjust Numerical Values • +/-: Scale Menu";
     }
 
     private void EnsureStyles()
     {
         if (_whiteTex == null)
         {
-            _whiteTex = new Texture2D(1, 1, TextureFormat.RGBA32, false);
-            _whiteTex.SetPixel(0, 0, GetColor(Color.white));
+            _whiteTex = new Texture2D(1, 1);
+            _whiteTex.SetPixel(0, 0, Color.white);
             _whiteTex.Apply();
         }
 
@@ -112,7 +164,7 @@ public class ModConfigurationUI : MonoBehaviour
             fontStyle = FontStyle.Bold
         };
 
-        _rowStyle = new GUIStyle(GUI.skin.button)
+        _rowStyle = new GUIStyle(GUI.skin.label)
         {
             alignment = TextAnchor.MiddleLeft,
             fontSize = OptionFontSize,
@@ -125,6 +177,12 @@ public class ModConfigurationUI : MonoBehaviour
             alignment = TextAnchor.MiddleLeft,
             wordWrap = true
         };
+
+        _buttonStyle = new GUIStyle(GUI.skin.button)
+        {
+            fontSize = OptionFontSize,
+            alignment = TextAnchor.MiddleCenter
+        };
     }
 
     private void Update()
@@ -136,13 +194,12 @@ public class ModConfigurationUI : MonoBehaviour
                 if (key.wasPressedThisFrame)
                 {
                     string controlPath = key.path;
-                    _bindingTarget!.StringEntry.Value = controlPath;
+                    _bindingTarget.StringEntry.Value = controlPath;
 
                     Plugin.Log.LogInfo($"Rebound {_bindingTarget.Label} to {controlPath}");
 
                     _waitingForBinding = false;
-                    hintText =
-                        $"{_bindingTarget.DisplayValue()}: Open/Close • Tab or ↑/↓: Move • Enter/Click: Change • Scroll Wheel or ←/→ Arrows: Adjust Numerical Values • +/-: Scale Menu";
+                    hintText = $"{_bindingTarget.DisplayValue()}: Open/Close • Tab or ↑/↓:  Move • Enter/Click: Change • Scroll Wheel or ←/→ Arrows: Adjust Numerical Values • +/-: Scale Menu";
                     _bindingTarget = null;
 
                     break;
@@ -152,15 +209,13 @@ public class ModConfigurationUI : MonoBehaviour
             return;
         }
 
-        if (Plugin.Instance.ConfigurationHandler.MenuAction != null &&
-            Plugin.Instance.ConfigurationHandler.MenuAction.WasPerformedThisFrame())
+        if (Plugin.Instance.ConfigurationHandler.MenuAction?.WasPerformedThisFrame() == true)
         {
-            _visible = !_visible;
-            if (_visible) OnOpened();
-            else OnClosed();
+            ToggleMenu();
+            return;
         }
 
-        if (!_visible || _options.Count == 0) return;
+        if (!_visible || _options == null || _options.Count == 0) return;
 
         if (Input.GetKeyDown(KeyCode.Tab))
         {
@@ -169,13 +224,20 @@ public class ModConfigurationUI : MonoBehaviour
         }
 
         if (Input.GetKeyDown(KeyCode.Equals) || Input.GetKeyDown(KeyCode.Plus))
+        {
             Scale(1);
+        }
 
         if (Input.GetKeyDown(KeyCode.Minus))
+        {
             Scale(-1);
+        }
 
-        if (Input.GetKeyDown(KeyCode.UpArrow)) CycleSelection(-1);
-        if (Input.GetKeyDown(KeyCode.DownArrow)) CycleSelection(1);
+        if (Input.GetKeyDown(KeyCode.UpArrow))
+            CycleSelection(-1);
+
+        if (Input.GetKeyDown(KeyCode.DownArrow))
+            CycleSelection(1);
 
         if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
             ToggleSelected();
@@ -230,38 +292,20 @@ public class ModConfigurationUI : MonoBehaviour
 
         if (option.Type == Option.OptionType.Int)
         {
-            int newValue = Mathf.Clamp(option.IntEntry.Value + (delta * option.Step), option.MinInt, option.MaxInt);
+            int newValue = Mathf.Clamp(option.IntEntry.Value + delta * option.Step, option.MinInt, option.MaxInt);
             option.IntEntry.Value = newValue;
         }
         else if (option.Type == Option.OptionType.Float)
         {
-            float newValue =
-                Mathf.Clamp(option.FloatEntry.Value + (delta * option.FloatStep), option.MinFloat, option.MaxFloat);
+            float newValue = Mathf.Clamp(option.FloatEntry.Value + delta * option.FloatStep, option.MinFloat, option.MaxFloat);
             option.FloatEntry.Value = newValue;
         }
     }
 
-    private void OnOpened()
-    {
-        _prevCursorVisible = Cursor.visible;
-        _prevCursorLock = Cursor.lockState;
-
-        Cursor.visible = true;
-        Cursor.lockState = CursorLockMode.None;
-
-        if (_options.Count > 0 && _options[_selectedIndex].IsDisabled())
-            CycleSelection(1);
-    }
-
-    private void OnClosed()
-    {
-        Cursor.visible = _prevCursorVisible;
-        Cursor.lockState = _prevCursorLock;
-    }
-
     private void CycleSelection(int delta)
     {
-        if (_options.Count == 0) return;
+        if (_options == null || _options.Count == 0)
+            return;
 
         int startIndex = _selectedIndex;
 
@@ -283,52 +327,69 @@ public class ModConfigurationUI : MonoBehaviour
         if (!_visible) return;
 
         EnsureStyles();
+
+        if (_options == null)
+            _options = new List<Option>();
+
         CalculatePanelWidth();
 
         float titleHeight = _titleStyle.CalcHeight(new GUIContent(titleText), PanelWidth - Pad * 2);
-
         float rowsHeight = _options.Count * (RowHeight + 4);
-        float lineHeight = _hintStyle.CalcHeight(new GUIContent("Test"), 9999);
-        float hintHeight = lineHeight * 2;
+        float hintHeight = _hintStyle.CalcHeight(new GUIContent(hintText), PanelWidth - Pad * 2);
 
-        int panelHeight = Pad + (int)titleHeight + 8 + (int)rowsHeight + Pad + (int)hintHeight;
+        int panelHeight = Pad
+                          + (int)titleHeight
+                          + 8
+                          + (int)rowsHeight
+                          + Pad
+                          + (int)hintHeight
+                          + ButtonHeight
+                          + ButtonHintSpacing
+                          + Pad;
 
         Rect panelRect = new Rect(20, 20, PanelWidth, panelHeight);
 
-        GUI.color = GetColor(new Color(0f, 0f, 0f, 0.75f));
+        GUI.color = new Color(0f, 0f, 0f, 0.75f);
         GUI.DrawTexture(panelRect, _whiteTex);
         GUI.color = Color.white;
 
-        var titleRect = new Rect(panelRect.x + Pad, panelRect.y + Pad, panelRect.width - Pad * 2, titleHeight);
+        var titleRect = new Rect(
+            panelRect.x + Pad,
+            panelRect.y + Pad,
+            panelRect.width - Pad * 2,
+            titleHeight
+        );
+
         GUI.Label(titleRect, titleText, _titleStyle);
 
         float y = titleRect.yMax + 8;
 
         for (int i = 0; i < _options.Count; i++)
         {
-            var rowRect = new Rect(panelRect.x + Pad, y, panelRect.width - Pad * 2, RowHeight);
+            var rowRect = new Rect(
+                panelRect.x + Pad,
+                y,
+                panelRect.width - Pad * 2,
+                RowHeight
+            );
+
             var option = _options[i];
 
             bool hover = rowRect.Contains(Event.current.mousePosition);
             if (hover && !option.IsDisabled())
                 _selectedIndex = i;
 
+            DrawOptionBackground(rowRect);
+
             if (i == _selectedIndex && !option.IsDisabled())
-            {
-                GUI.color = GetColor(new Color(1f, 1f, 1f, 0.24f));
-                GUI.DrawTexture(rowRect, _whiteTex);
-                GUI.color = Color.white;
-            }
+                DrawSelectedOverlay(rowRect);
 
             GUI.enabled = !option.IsDisabled();
 
             if (option.Label == "Menu Key" && _waitingForBinding)
             {
-                GUI.color = GetColor(new Color(0f, 0f, 0f, 0.6f));
-                GUI.DrawTexture(rowRect, _whiteTex);
-                GUI.color = Color.white;
-
-                GUI.Button(rowRect, $"Press any key...", _rowStyle);
+                DrawWaitingOverlay(rowRect);
+                GUI.Button(rowRect, "Press any key...", _rowStyle);
             }
             else if (GUI.Button(rowRect, $"{option.Label}: {option.DisplayValue()}", _rowStyle))
             {
@@ -343,20 +404,67 @@ public class ModConfigurationUI : MonoBehaviour
 
         var hintRect = new Rect(
             panelRect.x + Pad,
-            panelRect.yMax - Pad - hintHeight,
+            y + Pad,
             panelRect.width - Pad * 2,
             hintHeight
         );
 
         GUI.Label(hintRect, hintText, _hintStyle);
+
+        float buttonY = hintRect.yMax + ButtonHintSpacing;
+
+        if (GUI.Button(
+                new Rect(panelRect.xMax - ButtonWidth * 2 - Pad, buttonY, ButtonWidth, ButtonHeight),
+                "+",
+                _buttonStyle
+            ))
+        {
+            Scale(1);
+        }
+
+        if (GUI.Button(
+                new Rect(panelRect.xMax - ButtonWidth - Pad, buttonY, ButtonWidth, ButtonHeight),
+                "-",
+                _buttonStyle
+            ))
+        {
+            Scale(-1);
+        }
+    }
+
+    private void DrawOptionBackground(Rect rect)
+    {
+        GUI.color = new Color(0.3f, 0.3f, 0.3f, 0.8f);
+        GUI.DrawTexture(rect, _whiteTex);
+        GUI.color = Color.white;
+    }
+
+    private void DrawSelectedOverlay(Rect rect)
+    {
+        GUI.color = new Color(1f, 1f, 1f, 0.24f);
+        GUI.DrawTexture(rect, _whiteTex);
+        GUI.color = Color.white;
+    }
+
+    private void DrawWaitingOverlay(Rect rect)
+    {
+        GUI.color = new Color(0f, 0f, 0f, 0.6f);
+        GUI.DrawTexture(rect, _whiteTex);
+        GUI.color = Color.white;
     }
 
     private void OnDestroy()
     {
+        if (_visible)
+            Close();
+
         if (_whiteTex != null)
         {
             Destroy(_whiteTex);
-            _whiteTex = null!;
+            _whiteTex = null;
         }
+
+        if (Instance == this)
+            Instance = null;
     }
 }
