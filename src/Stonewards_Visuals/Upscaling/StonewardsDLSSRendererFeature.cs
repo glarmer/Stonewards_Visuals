@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using Stonewards_Visuals.Configuration;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.NVIDIA;
@@ -99,20 +100,20 @@ internal sealed class StonewardsDLSSRendererFeature : ScriptableRendererFeature
 
         public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
         {
-            var config = Plugin.Instance.ConfigurationHandler;
+            ConfigurationHandler config = Plugin.Instance.ConfigurationHandler;
             if (!config.DLSSEnabled || !EnsureAvailable())
                 return;
 
-            var resourceData = frameData.Get<UniversalResourceData>();
+            UniversalResourceData resourceData = frameData.Get<UniversalResourceData>();
             if (resourceData.isActiveTargetBackBuffer)
                 return;
 
-            var cameraData = frameData.Get<UniversalCameraData>();
-            var source = resourceData.cameraColor;
-            var depth = resourceData.cameraDepthTexture.IsValid()
+            UniversalCameraData cameraData = frameData.Get<UniversalCameraData>();
+            TextureHandle source = resourceData.cameraColor;
+            TextureHandle depth = resourceData.cameraDepthTexture.IsValid()
                 ? resourceData.cameraDepthTexture
                 : resourceData.cameraDepth;
-            var motionVectors = resourceData.motionVectorColor;
+            TextureHandle motionVectors = resourceData.motionVectorColor;
 
             if (!source.IsValid() || !depth.IsValid() || !motionVectors.IsValid())
                 return;
@@ -141,11 +142,11 @@ internal sealed class StonewardsDLSSRendererFeature : ScriptableRendererFeature
             TextureHandle output = renderGraph.CreateTexture(outputDesc);
             DLSSQuality quality = ToDLSSQuality(config.DLSSMode);
             DLSSPresetMode presetMode = config.DLSSPresetMode;
-            var inputResolution = new Vector2Int(inputWidth, inputHeight);
-            var outputResolution = new Vector2Int(outputWidth, outputHeight);
+            Vector2Int inputResolution = new Vector2Int(inputWidth, inputHeight);
+            Vector2Int outputResolution = new Vector2Int(outputWidth, outputHeight);
             bool inputIsHDR = GraphicsFormatUtility.IsHDRFormat(inputDesc.format);
 
-            using (var builder = renderGraph.AddUnsafePass<PassData>("Stonewards Visuals DLSS", out var passData, profilingSampler))
+            using (IUnsafeRenderGraphBuilder builder = renderGraph.AddUnsafePass<PassData>("Stonewards Visuals DLSS", out PassData passData, profilingSampler))
             {
                 passData.ShouldReinitializeContext = ShouldReinitializeContext(quality, presetMode, inputResolution, outputResolution, inputIsHDR);
                 passData.InputWidth = (uint)inputWidth;
@@ -170,7 +171,7 @@ internal sealed class StonewardsDLSSRendererFeature : ScriptableRendererFeature
 
                 builder.SetRenderFunc((PassData data, UnsafeGraphContext context) =>
                 {
-                    var cmd = CommandBufferHelpers.GetNativeCommandBuffer(context.cmd);
+                    CommandBuffer cmd = CommandBufferHelpers.GetNativeCommandBuffer(context.cmd);
                     if (data.ShouldReinitializeContext)
                     {
                         DestroyContext(cmd);
@@ -181,7 +182,7 @@ internal sealed class StonewardsDLSSRendererFeature : ScriptableRendererFeature
                         return;
 
                     _context.executeData = data.ExecutionData;
-                    var textures = new DLSSTextureTable
+                    DLSSTextureTable textures = new DLSSTextureTable
                     {
                         colorInput = data.ColorInput,
                         depth = data.Depth,
@@ -207,7 +208,7 @@ internal sealed class StonewardsDLSSRendererFeature : ScriptableRendererFeature
             if (_context == null || _device == null)
                 return;
 
-            var cmd = new CommandBuffer { name = "Stonewards Visuals DLSS Dispose" };
+            CommandBuffer cmd = new CommandBuffer { name = "Stonewards Visuals DLSS Dispose" };
             _device.DestroyFeature(cmd, _context);
             Graphics.ExecuteCommandBuffer(cmd);
             cmd.Release();
@@ -333,7 +334,7 @@ internal sealed class StonewardsDLSSRendererFeature : ScriptableRendererFeature
 
             DLSSPreset preset = ResolvePreset(data.PresetMode);
 
-            var init = new DLSSCommandInitializationData
+            DLSSCommandInitializationData init = new DLSSCommandInitializationData
             {
                 inputRTWidth = data.InputWidth,
                 inputRTHeight = data.InputHeight,
@@ -352,7 +353,7 @@ internal sealed class StonewardsDLSSRendererFeature : ScriptableRendererFeature
             init.SetFlag(DLSSFeatureFlags.DepthInverted, data.InvertedDepth);
             init.SetFlag(DLSSFeatureFlags.MVJittered, false);
 
-            var context = _device.CreateFeature(cmd, init);
+            DLSSContext? context = _device.CreateFeature(cmd, init);
 
             if (context == null)
             {

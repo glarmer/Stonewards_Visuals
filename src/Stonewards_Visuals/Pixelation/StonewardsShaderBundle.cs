@@ -44,7 +44,8 @@ public class StonewardsShaderBundle : IDisposable
     public void Dispose()
     {
         PSXMasterShader = null;
-        _bundle.Unload(false);
+        _bundle?.Unload(false);
+        _bundle = null;
     }
 
     private static string[] GetCandidatePaths()

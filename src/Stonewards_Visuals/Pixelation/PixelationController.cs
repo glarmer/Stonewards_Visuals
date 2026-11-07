@@ -32,7 +32,7 @@ public class PixelationController : MonoBehaviour
         
         cameraData.requiresColorTexture = true;
 
-        var renderer = cameraData.scriptableRenderer;
+        ScriptableRenderer? renderer = cameraData.scriptableRenderer;
         if (renderer == null)
             return;
 

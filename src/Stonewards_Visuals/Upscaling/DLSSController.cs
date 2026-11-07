@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using HarmonyLib;
+using Stonewards_Visuals.Configuration;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -72,7 +73,7 @@ public sealed class DLSSController : MonoBehaviour
         if (_camera == null || !_camera.TryGetComponent(out UniversalAdditionalCameraData cameraData))
             return;
 
-        var renderer = cameraData.scriptableRenderer;
+        ScriptableRenderer? renderer = cameraData.scriptableRenderer;
         if (renderer == null)
             return;
 
@@ -101,7 +102,7 @@ public sealed class DLSSController : MonoBehaviour
 
     private void OnBeginCameraRendering(ScriptableRenderContext context, Camera camera)
     {
-        var config = Plugin.Instance.ConfigurationHandler;
+        ConfigurationHandler config = Plugin.Instance.ConfigurationHandler;
         if (camera != _camera || !config.DLSSEnabled || !config.DLSSJitterEnabled || config.DLSSJitterStrength <= 0f)
         {
             if (camera == _jitteredCamera)
@@ -168,7 +169,7 @@ public sealed class DLSSController : MonoBehaviour
 
     private static float[] GenerateHalton(int radix, int count)
     {
-        var values = new float[count];
+        float[] values = new float[count];
         for (int i = 0; i < count; i++)
             values[i] = Halton(i + 1, radix);
 

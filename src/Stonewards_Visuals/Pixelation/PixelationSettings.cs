@@ -1,3 +1,4 @@
+using Stonewards_Visuals.Configuration;
 using UnityEngine;
 
 namespace Stonewards_Visuals.Pixelation;
@@ -16,7 +17,7 @@ public sealed class PixelationVolume : MonoBehaviour
 
     internal void ApplyConfiguration()
     {
-        var config = Plugin.Instance.ConfigurationHandler;
+        ConfigurationHandler config = Plugin.Instance.ConfigurationHandler;
         Enabled = config.PixelationEnabled;
         Intensity = config.PixelationIntensity;
         ColorPrecisionEnabled = config.PixelationColorPrecisionEnabled;

@@ -47,8 +47,8 @@ public class Settings
     {
         if (GraphicsSettings.currentRenderPipeline is UniversalRenderPipelineAsset pipeline)
         {
-            var flags = BindingFlags.NonPublic | BindingFlags.Instance;
-            var softShadowsField = pipeline.GetType().GetField("m_SoftShadowsSupported", flags);
+            BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Instance;
+            FieldInfo? softShadowsField = pipeline.GetType().GetField("m_SoftShadowsSupported", flags);
             if (softShadowsField != null)
                 softShadowsField.SetValue(pipeline, _configurationHandler.SoftShadows);
             else

@@ -43,18 +43,22 @@ public partial class Plugin : BaseUnityPlugin
         UpscalerLibAvailable = OptionalUpscalerLib.IsInstalled;
         if (!UpscalerLibAvailable)
             Log.LogInfo("UpscalerLib is not installed. DLSS options will be hidden and DLSS will remain off.");
-
-        ConfigurationHandler = new ConfigurationHandler(Config);
-        Settings = new Settings();
+        
         Shaders = new StonewardsShaderBundle();
         Shaders.Load();
-        if (!UpscalerLibAvailable)
-            ConfigurationHandler.ForceDLSSOff();
 
         _harmony = new Harmony(Id);
         _harmony.PatchAll();
-        
-        var go = new GameObject("StonewardsVisuals");
+    }
+
+    private void Start()
+    {
+        ConfigurationHandler = new ConfigurationHandler(Config);
+        Settings = new Settings();
+        if (!UpscalerLibAvailable)
+            ConfigurationHandler.ForceDLSSOff();
+
+        GameObject go = new GameObject("StonewardsVisuals");
         DontDestroyOnLoad(go);
         if (UpscalerLibAvailable)
             DLSSController = go.AddComponent<DLSSController>();
@@ -265,7 +269,7 @@ public partial class Plugin : BaseUnityPlugin
             return;
 
         _lastCamera = camera;
-        DLSSController.Refresh(camera);
+        DLSSController?.Refresh(camera);
         PixelationController.Refresh(camera);
         Settings.SetAllCameraSettings(camera);
         Log.LogInfo($"Using camera '{camera.name}' for Stonewards visual settings.");

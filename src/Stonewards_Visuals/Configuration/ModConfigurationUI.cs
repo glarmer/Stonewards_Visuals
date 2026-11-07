@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 
 namespace Stonewards_Visuals.Configuration;
 
@@ -94,7 +95,7 @@ public class ModConfigurationUI : MonoBehaviour
     {
         float maxWidth = _titleStyle.CalcSize(new GUIContent(titleText)).x;
 
-        foreach (var option in _options)
+        foreach (Option option in _options)
         {
             float w = _rowStyle.CalcSize(new GUIContent($"{option.Label}: {option.DisplayValue()}")).x;
             if (w > maxWidth) maxWidth = w;
@@ -189,7 +190,7 @@ public class ModConfigurationUI : MonoBehaviour
     {
         if (_waitingForBinding && Keyboard.current.anyKey.wasPressedThisFrame)
         {
-            foreach (var key in Keyboard.current.allKeys)
+            foreach (KeyControl key in Keyboard.current.allKeys)
             {
                 if (key.wasPressedThisFrame)
                 {
@@ -257,7 +258,7 @@ public class ModConfigurationUI : MonoBehaviour
 
     private void ToggleSelected()
     {
-        var option = _options[_selectedIndex];
+        Option option = _options[_selectedIndex];
         if (option.IsDisabled()) return;
 
         switch (option.Type)
@@ -287,7 +288,7 @@ public class ModConfigurationUI : MonoBehaviour
 
     private void AdjustNumerical(int delta)
     {
-        var option = _options[_selectedIndex];
+        Option option = _options[_selectedIndex];
         if (option.IsDisabled()) return;
 
         if (option.Type == Option.OptionType.Int)
@@ -353,7 +354,7 @@ public class ModConfigurationUI : MonoBehaviour
         GUI.DrawTexture(panelRect, _whiteTex);
         GUI.color = Color.white;
 
-        var titleRect = new Rect(
+        Rect titleRect = new Rect(
             panelRect.x + Pad,
             panelRect.y + Pad,
             panelRect.width - Pad * 2,
@@ -366,14 +367,14 @@ public class ModConfigurationUI : MonoBehaviour
 
         for (int i = 0; i < _options.Count; i++)
         {
-            var rowRect = new Rect(
+            Rect rowRect = new Rect(
                 panelRect.x + Pad,
                 y,
                 panelRect.width - Pad * 2,
                 RowHeight
             );
 
-            var option = _options[i];
+            Option option = _options[i];
 
             bool hover = rowRect.Contains(Event.current.mousePosition);
             if (hover && !option.IsDisabled())
@@ -402,7 +403,7 @@ public class ModConfigurationUI : MonoBehaviour
             y += RowHeight + 4;
         }
 
-        var hintRect = new Rect(
+        Rect hintRect = new Rect(
             panelRect.x + Pad,
             y + Pad,
             panelRect.width - Pad * 2,
